@@ -1,0 +1,122 @@
+apply plugin: 'com.android.application'
+def releaseTime() {
+    return new Date().format("yyyyMMdd", TimeZone.getTimeZone("UTC"))
+}
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.3"
+
+    defaultConfig {
+        applicationId "com.liujc.multichannelbuild"
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+    signingConfigs {
+        debug {
+
+        }
+        release {
+//            storeFile file("../yourapp.keystore")
+//            storePassword "your password"
+//            keyAlias "your alias"
+//            keyPassword "your password"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    //apk命名
+    android.applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                def fileName
+                //这里修改apk文件名
+                //apk_渠道名-版本号-版本名称-编译时间.apk
+                //_${variant.productFlavors[0].name}渠道名
+                if (variant.buildType.name == "release") {
+                    fileName = "app_v${defaultConfig.versionName}_${releaseTime()}_${variant.productFlavors[0].name}.apk"
+                } else {
+                    fileName = "app_v${defaultConfig.versionName}_${releaseTime()}_beta.apk"
+                }
+//                        def fileName = "AndroidTools-${defaultConfig.versionCode}-${defaultConfig.versionName}-${releaseTime()}.apk"
+                output.outputFile = new File(outputFile.parent, fileName)
+            }
+        }
+    }
+
+    //单个配置
+//    productFlavors {
+//        playStore {
+//            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "playStore"]
+//        }
+//        miui {
+//            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "miui"]
+//        }
+//        wandoujia {
+//            manifestPlaceholders = [UMENG_CHANNEL_VALUE: "wandoujia"]
+//        }
+//    }
+    //批量替换
+    productFlavors {
+        qihu360 {} // 360手机助手
+        yingyongbao {} // 腾讯应用宝
+        wandoujia {} // 豌豆荚
+        baidu {} // 百度手机助手
+        miui {} // 小米
+        flyme {} // 魅族
+        lenovo {} // 联想-乐商店
+        oppo {} // Oppo-可可软件商店
+        huawei {} // 华为
+        vivo {} // vivo
+        hiapk {} // 安卓市场
+        sj91 {} // 91手机助手
+//        sogou {} // 搜狗手机市场
+//        sohu {} // 搜狐应用中心
+//        taobao {} // 淘宝手机助手
+//        gfan {} // 机锋
+//        appchina {} // 应用汇
+//        mumayi {} // 木蚂蚁
+//        wangyi163 {} // 网易应用
+//        nduoa {} // N多市场
+//        mm10086 {} // MM商城-中国移动
+//        wostore {} // WO商店
+//        youyi {} // 优异
+//        uc {} // UC+开发平台
+//        anzhi {} // 安智市场
+//        google {} // google play
+//        amazon {} // 亚马逊
+    }
+
+
+    productFlavors.all {
+        flavor -> flavor.manifestPlaceholders = [channel: name]
+    }
+}
+File propFile = file('signing.properties');
+if (propFile.exists()) {
+    def Properties props = new Properties()
+    props.load(new FileInputStream(propFile))
+    if (props.containsKey('STORE_FILE') && props.containsKey('STORE_PASSWORD') &&
+            props.containsKey('KEY_ALIAS') && props.containsKey('KEY_PASSWORD')) {
+        android.signingConfigs.release.storeFile = file(props['STORE_FILE'])
+        android.signingConfigs.release.storePassword = props['STORE_PASSWORD']
+        android.signingConfigs.release.keyAlias = props['KEY_ALIAS']
+        android.signingConfigs.release.keyPassword = props['KEY_PASSWORD']
+    } else {
+        android.buildTypes.release.signingConfig = null
+    }
+} else {
+    android.buildTypes.release.signingConfig = null
+}
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.2.1'
+}
